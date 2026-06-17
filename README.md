@@ -53,6 +53,9 @@ python3 scripts/evaluate.py \
 ## 安装
 
 ```bash
+# 通用安装路径
+git clone https://github.com/Polardong66/agent-quality-evaluator.git /path/to/skills/agent-quality-evaluator
+
 # 克隆到 WorkBuddy skills 目录
 git clone https://github.com/Polardong66/agent-quality-evaluator.git ~/.workbuddy/skills/agent-quality-evaluator
 ```
