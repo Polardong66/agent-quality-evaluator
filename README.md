@@ -61,17 +61,6 @@ git clone https://github.com/Polardong66/agent-quality-evaluator.git ~/.workbudd
 
 评估Agent、Agent质量评估、Agent评分、Agent上线评审、Agent代码质量、对比Agent方案、生成质量评估报告、evaluate agent、agent quality score
 
-## 迭代历史
-
-基于 Darwin Skill v2.0 经过 7 轮优化迭代，从 68.1 分（B级）进化到 97.5 分（A级），0 次回滚。
-
-| 轮次 | 分数 | 主攻维度 |
-|------|:---:|---------|
-| 基线 | 68.1 | - |
-| R1-R3 | 88.5 | 检查点设计、失败模式编码、反例黑名单 |
-| R4-R5 | 94.3 | HV分析跨域借鉴、部署门禁、流程可视化 |
-| R6-R7 | 97.5 | 业界调研、子维度扩展、成熟度模型、AI-CI/CD |
-
 ## 许可
 
 基于 "Agent训练营第一期资料" 中的 OPI 评估方法构建。
