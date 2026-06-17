@@ -60,7 +60,3 @@ git clone https://github.com/Polardong66/agent-quality-evaluator.git ~/.workbudd
 ## 触发词
 
 评估Agent、Agent质量评估、Agent评分、Agent上线评审、Agent代码质量、对比Agent方案、生成质量评估报告、evaluate agent、agent quality score
-
-## 许可
-
-基于 "Agent训练营第一期资料" 中的 OPI 评估方法构建。
