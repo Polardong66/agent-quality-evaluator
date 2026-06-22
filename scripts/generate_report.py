@@ -10,6 +10,7 @@ Agent Quality Evaluator — HTML Report Generator
 
 import json
 import sys
+import os
 import argparse
 from datetime import datetime
 
@@ -350,16 +351,40 @@ def load_evaluate_result(args):
 
 
 def resolve_weights(preset="通用场景"):
-    presets = {
-        "通用场景": {"accuracy": 25, "stability": 25, "speed": 15, "controllability": 10, "cost": 15, "compliance": 10},
-        "受监管行业": {"accuracy": 20, "stability": 20, "speed": 10, "controllability": 15, "cost": 10, "compliance": 25},
-        "实时服务": {"accuracy": 20, "stability": 25, "speed": 25, "controllability": 10, "cost": 10, "compliance": 10},
-    }
-    # Partial match
-    for key, val in presets.items():
+    """从共享 weights.json 读取权重，支持别名匹配"""
+    import json
+    weights_paths = [
+        os.path.join(os.path.dirname(__file__), "..", "references", "weights.json"),
+        "references/weights.json",
+    ]
+    data = None
+    for p in weights_paths:
+        try:
+            with open(p, encoding="utf-8") as f:
+                data = json.load(f)
+                break
+        except (FileNotFoundError, json.JSONDecodeError):
+            continue
+    if data is None:
+        # Fallback to hardcoded defaults
+        return {"accuracy": 25, "stability": 25, "speed": 15, "controllability": 10, "cost": 15, "compliance": 10}
+
+    presets = data["presets"]
+    aliases = data.get("aliases", {})
+
+    # Try alias resolution first
+    resolved = aliases.get(preset, preset)
+
+    # Try exact match
+    if resolved in presets:
+        # Convert decimal weights to percentage integers
+        return {k: round(v * 100) for k, v in presets[resolved].items()}
+    # Try partial match on preset names
+    for key in presets:
         if key in preset or preset in key:
-            return val
-    return presets["通用场景"]
+            return {k: round(v * 100) for k, v in presets[key].items()}
+    # Fallback
+    return {k: round(v * 100) for k, v in presets["通用场景"].items()}
 
 
 def calculate_total(scores, weights):
@@ -396,8 +421,8 @@ def generate_report(data, preset="通用场景"):
             html = f.read()
     except FileNotFoundError:
         html_paths = [
+            os.path.join(os.path.dirname(__file__), "..", "assets", "report_template.html"),
             "assets/report_template.html",
-            "/Users/polardong/.workbuddy/skills/agent-quality-evaluator/assets/report_template.html",
         ]
         html = ""
         for p in html_paths:

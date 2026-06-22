@@ -1,0 +1,37 @@
+{
+  "_description": "Shared weight presets for Agent Quality Evaluator. Used by both evaluate.py and generate_report.py.",
+  "presets": {
+    "通用场景": {
+      "accuracy": 0.25,
+      "stability": 0.25,
+      "speed": 0.15,
+      "controllability": 0.10,
+      "cost": 0.15,
+      "compliance": 0.10
+    },
+    "受监管行业（金融/法律/医疗）": {
+      "accuracy": 0.20,
+      "stability": 0.20,
+      "speed": 0.10,
+      "controllability": 0.15,
+      "cost": 0.10,
+      "compliance": 0.25
+    },
+    "实时服务（ChatBot/在线客服）": {
+      "accuracy": 0.20,
+      "stability": 0.25,
+      "speed": 0.25,
+      "controllability": 0.10,
+      "cost": 0.10,
+      "compliance": 0.10
+    }
+  },
+  "aliases": {
+    "通用": "通用场景",
+    "监管": "受监管行业（金融/法律/医疗）",
+    "受监管": "受监管行业（金融/法律/医疗）",
+    "金融": "受监管行业（金融/法律/医疗）",
+    "实时": "实时服务（ChatBot/在线客服）",
+    "客服": "实时服务（ChatBot/在线客服）"
+  }
+}

@@ -231,8 +231,8 @@ def get_apm_assessment(scores: Dict[str, float]) -> Dict[str, str]:
     else:
         apm["规划控制"] = "❌ 薄弱 — 任务规划和意图识别存在明显缺陷"
 
-    # 记忆控制 (Memory Control) — 关联成本和稳定性
-    mem_avg = (scores.get("cost", 0) + scores.get("stability", 0)) / 2
+    # 记忆控制 (Memory Control) — 关联成本、稳定性和可控性
+    mem_avg = (scores.get("cost", 0) + scores.get("stability", 0) + scores.get("controllability", 0)) / 3
     if mem_avg >= 80:
         apm["记忆控制"] = "✅ 良好 — 上下文管理合理，信息生命周期管控得当"
     elif mem_avg >= 60:
@@ -240,8 +240,8 @@ def get_apm_assessment(scores: Dict[str, float]) -> Dict[str, str]:
     else:
         apm["记忆控制"] = "❌ 薄弱 — 上下文管理失控，Token浪费严重"
 
-    # 工具控制 (Tool Control) — 关联稳定性和成本
-    tool_avg = (scores.get("stability", 0) + scores.get("cost", 0)) / 2
+    # 工具控制 (Tool Control) — 关联稳定性、成本和准确性
+    tool_avg = (scores.get("stability", 0) + scores.get("cost", 0) + scores.get("accuracy", 0)) / 3
     if tool_avg >= 80:
         apm["工具控制"] = "✅ 良好 — 工具选择精准，调用时机合理，错误恢复可靠"
     elif tool_avg >= 60:
@@ -257,6 +257,24 @@ def get_apm_assessment(scores: Dict[str, float]) -> Dict[str, str]:
         apm["行动控制"] = "⚠️ 需改进 — 输出格式偶有波动或内容边界不够明确"
     else:
         apm["行动控制"] = "❌ 薄弱 — 输出不可控，格式混乱或内容越界"
+
+    # 编排控制 (Orchestration Control) — 关联可控性、响应速度和准确性
+    orch_avg = (scores.get("controllability", 0) + scores.get("speed", 0) + scores.get("accuracy", 0)) / 3
+    if orch_avg >= 80:
+        apm["编排控制"] = "✅ 良好 — 子任务分配合理，收敛路径清晰，无冗余迭代"
+    elif orch_avg >= 60:
+        apm["编排控制"] = "⚠️ 需改进 — 存在部分冗余迭代或收敛性不足的情况"
+    else:
+        apm["编排控制"] = "❌ 薄弱 — 多步骤协调混乱，大幅冗余消耗资源"
+
+    # 安全控制 (Security Control) — 关联合规性、可控性和准确性
+    sec_avg = (scores.get("compliance", 0) + scores.get("controllability", 0) + scores.get("accuracy", 0)) / 3
+    if sec_avg >= 80:
+        apm["安全控制"] = "✅ 良好 — 全链路安全护栏覆盖，对抗鲁棒性强，审计完整"
+    elif sec_avg >= 60:
+        apm["安全控制"] = "⚠️ 需改进 — 部分环节缺少安全防护或审计覆盖不足"
+    else:
+        apm["安全控制"] = "❌ 薄弱 — 安全机制严重缺失，存在合规和对抗风险"
 
     # 全流程可观测性 — 关联响应速度和稳定性
     obs_avg = (scores.get("speed", 0) + scores.get("stability", 0)) / 2
@@ -333,7 +351,6 @@ def format_report(result: Dict) -> str:
         "bg_green": "\033[42m", "bg_red": "\033[41m", "bg_yellow": "\033[43m",
         "bg_blue": "\033[44m",
     }
-    G = get_grade
     grade_color = {"A": "green", "B": "blue", "C": "yellow", "D": "yellow", "E": "red"}
 
     lines = []
