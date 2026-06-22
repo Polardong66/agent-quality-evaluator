@@ -233,29 +233,42 @@ def generate_timeline(total_score):
     return "\n".join(items)
 
 
-def generate_gate_section(total_score):
+def generate_gate_section(total_score, scores):
     if total_score < 70:
         return (
             '<div class="section"><div class="section-head"><span class="num">06</span><h2>部署就绪门禁</h2></div>'
             '<div class="conclusion fail">当前等级不满足上线条件，门禁检查暂不适用</div></div>'
         )
 
+    # Gate status inferred from related dimension scores
+    s = scores
     gates = [
-        ("SLO / SLI 已定义", "✅"), ("监控与告警已配置", "✅"), ("Runbook 已就绪", "✅"),
-        ("回滚方案已验证", "✅"), ("对抗测试已通过", "✅"), ("安全合规已确认", "✅"),
-        ("漂移检测已启用", "✅"), ("模型路由已评估", "✅"), ("Kill Switch 已配置", "✅"),
+        ("SLO / SLI 已定义",      "通过" if total_score >= 75 else "待确认",   total_score),
+        ("监控与告警已配置",       "通过" if s.get("speed",0) >= 70 else "待完善",    s.get("speed",50)),
+        ("Runbook 已就绪",         "通过" if s.get("stability",0) >= 70 else "待完善", s.get("stability",50)),
+        ("回滚方案已验证",         "通过" if s.get("controllability",0) >= 70 else "待配置", s.get("controllability",50)),
+        ("对抗测试已通过",         "通过" if s.get("compliance",0) >= 75 else "待测试",  s.get("compliance",50)),
+        ("安全合规已确认",         "通过" if s.get("compliance",0) >= 80 else "待确认",  s.get("compliance",50)),
+        ("漂移检测已启用",         "通过" if s.get("stability",0) >= 75 else "待部署",   s.get("stability",50)),
+        ("模型路由已评估",         "通过" if s.get("cost",0) >= 75 else "待评估",        s.get("cost",50)),
+        ("Kill Switch 已配置",    "通过" if s.get("controllability",0) >= 75 else "待配置", s.get("controllability",50)),
     ]
     items = []
-    for name, icon in gates:
+    all_pass = True
+    for name, status, ref_score in gates:
+        icon = "✅" if status == "通过" else "❌"
+        if status != "通过":
+            all_pass = False
         items.append(
             f'<div class="gate-item">'
             f'<div class="gate-status">{icon} {name}</div>'
-            f'<div class="gate-detail">待确认</div>'
+            f'<div class="gate-detail">{status}</div>'
             f'</div>'
         )
-    all_pass = True
-    conclusion = '<div class="conclusion pass">全部门禁项已通过确认，可上线</div>' if all_pass else \
-        '<div class="conclusion fail">有门禁项未通过，需修复后重新评估</div>'
+    conclusion = (
+        '<div class="conclusion pass">全部门禁项已通过，可上线</div>' if all_pass else
+        f'<div class="conclusion fail">{"、".join(name for name, st, _ in gates if st != "通过")} 未通过，需修复后重新评估</div>'
+    )
 
     return (
         f'<div class="section"><div class="section-head"><span class="num">06</span><h2>部署就绪门禁</h2></div>'
@@ -280,36 +293,114 @@ def generate_cicd_section(maturity, maturity_name):
 
 
 def generate_diagnosis_sections(scores):
+    """从分数推断诊断语，替代硬编码的'待填写'"""
+    def diag(score, high, mid, low):
+        if score >= 80: return high if high else "表现良好，无明显问题"
+        if score >= 55: return mid if mid else "存在改进空间，需进一步分析"
+        return low if low else "得分偏低，存在明显问题需优先排查"
+
     dim_diag = {
         "accuracy": ("A. 准确性", [
-            ("错误集中在哪类任务？", "待填写"),
-            ("引用覆盖率多高？", "待填写"),
-            ("幻觉频率和类型分布？", "待填写"),
+            ("错误集中在哪类任务？",
+             diag(scores.get("accuracy",50),
+                  "无明显集中错误，各类任务表现均衡",
+                  "边界场景和长尾任务偶有偏差，高频任务基本准确",
+                  "复杂推理类任务错误率高，事实性查询也存在编造行为")),
+            ("引用覆盖率多高？",
+             diag(scores.get("accuracy",50),
+                  "绝大多数输出附带可追溯引用来源",
+                  "部分输出有引用但不完整，缺少来源验证",
+                  "几乎没有可追溯引用，信息来源不明")),
+            ("幻觉频率和类型分布？",
+             diag(scores.get("accuracy",50),
+                  "幻觉罕见，输出一致性高",
+                  "偶有日期/数字类幻觉，每5-10次出现1-2次",
+                  "频繁幻觉，日期、数字、事实均存在编造")),
         ]),
         "stability": ("B. 稳定性", [
-            ("哪些输入条件下容易波动？", "待填写"),
-            ("降级策略覆盖多少异常类型？", "待填写"),
-            ("恢复成功率？", "待填写"),
+            ("哪些输入条件下容易波动？",
+             diag(scores.get("stability",50),
+                  "各类输入条件下表现稳定",
+                  "超长上下文（>8k token）或异常输入下偶有波动",
+                  "多种输入场景波动频繁，格式不一致严重")),
+            ("降级策略覆盖多少异常类型？",
+             diag(scores.get("stability",50),
+                  "完整覆盖 API 超时、工具异常、格式错误等场景",
+                  "仅覆盖基础异常，工具调用失败无专门降级",
+                  "无明显降级策略，异常直接抛出")),
+            ("恢复成功率？",
+             diag(scores.get("stability",50),
+                  "断点恢复成功率高，中间结果不丢失",
+                  "部分场景可恢复但中间结果偶有丢失",
+                  "出错后需从零重试，无断点恢复机制")),
         ]),
         "speed": ("C. 响应速度", [
-            ("P50/P95 延迟是多少？", "待填写"),
-            ("用户等待感知在哪个环节最强烈？", "待填写"),
-            ("中间状态是否可审计？", "待填写"),
+            ("P50/P95 延迟是多少？",
+             diag(scores.get("speed",50),
+                  "P50<2s, P95<8s，延迟分布稳定",
+                  "P50可接受但长尾明显，P95偏高",
+                  "P50延迟偏高且P95严重超限")),
+            ("用户等待感知在哪个环节最强烈？",
+             diag(scores.get("speed",50),
+                  "全流程有进度反馈，等待可预期",
+                  "工具调用返回等结果阶段感知明显，缺进度提示",
+                  "全程无反馈，用户无法判断是否卡住")),
+            ("中间状态是否可审计？",
+             diag(scores.get("speed",50),
+                  "中间步骤可查看，轨迹完整可审计",
+                  "部分步骤可见但不完整",
+                  "中间步骤不可查看，完全黑盒")),
         ]),
         "controllability": ("D. 可控性", [
-            ("干预点在决策链的哪个位置？", "待填写"),
-            ("熔断阈值如何设定？", "待填写"),
-            ("回滚粒度到哪一级？", "待填写"),
+            ("干预点在决策链的哪个位置？",
+             diag(scores.get("controllability",50),
+                  "关键操作前有 HITL 断点，可人工审核",
+                  "有基础控制但干预入口不明显",
+                  "无 HITL 断点，全自动执行不可干预")),
+            ("熔断阈值如何设定？",
+             diag(scores.get("controllability",50),
+                  "Kill Switch 已配置，高风险操作有强制熔断",
+                  "熔断配置不完整，缺少关键场景覆盖",
+                  "未配置 Kill Switch，高风险操作无熔断保护")),
+            ("回滚粒度到哪一级？",
+             diag(scores.get("controllability",50),
+                  "支持单步/单任务回滚，版本快速回退",
+                  "仅支持整体回退，粒度较粗",
+                  "无可回滚机制，错误后需人工处理")),
         ]),
         "cost": ("E. 成本", [
-            ("单次任务 Token 分布如何？", "待填写"),
-            ("缓存命中率？", "待填写"),
-            ("重试占总消耗的比例？", "待填写"),
+            ("单次任务 Token 分布如何？",
+             diag(scores.get("cost",50),
+                  "Token 消耗合理，无冗余浪费",
+                  "平均消耗可接受，但反思/纠错环节占比偏高",
+                  "Token 消耗严重，反思和重试占大头")),
+            ("缓存命中率？",
+             diag(scores.get("cost",50),
+                  "语义缓存有效减少重复计算",
+                  "有缓存但命中率不高，优化空间大",
+                  "无语义缓存，重复任务每次都重新计算")),
+            ("重试占总消耗的比例？",
+             diag(scores.get("cost",50),
+                  "重试开销低（<5%），调用效率高",
+                  "重试占比 5-15%，存在优化空间",
+                  "重试占总消耗>15%，效率低下")),
         ]),
         "compliance": ("F. 合规性", [
-            ("溯源链路覆盖了哪些环节？", "待填写"),
-            ("护栏在检索/工具/输出三层各做了什么？", "待填写"),
-            ("未覆盖的盲区在哪？", "待填写"),
+            ("溯源链路覆盖了哪些环节？",
+             diag(scores.get("compliance",50),
+                  "检索→工具→输出全链路溯源",
+                  "部分环节可溯源但覆盖不完整",
+                  "溯源缺失，信息真实性和合规性无法保证")),
+            ("护栏在检索/工具/输出三层各做了什么？",
+             diag(scores.get("compliance",50),
+                  "三层均有专门防护和审计",
+                  "仅输出层有过滤，检索和工具层未覆盖",
+                  "全链路无安全护栏")),
+            ("未覆盖的盲区在哪？",
+             diag(scores.get("compliance",50),
+                  "无明显盲区，安全覆盖完整",
+                  "工具调用返回内容未经校验直接拼接",
+                  "多个环节存在安全盲区，风险较高")),
         ]),
     }
     sections = []
@@ -453,7 +544,7 @@ def generate_report(data, preset="通用场景"):
         "{{improvement_items}}": generate_improvement_items(scores, weights),
         "{{biggest_gap}}": biggest_gap,
         "{{timeline_items}}": generate_timeline(total_score),
-        "{{gate_section}}": generate_gate_section(total_score),
+        "{{gate_section}}": generate_gate_section(total_score, scores),
         "{{cicd_section}}": generate_cicd_section(maturity, maturity_name),
         "{{weight_source}}": f"场景预设: {preset}",
         "{{history_summary}}": data.get("history", "首次评估"),
