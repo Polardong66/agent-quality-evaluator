@@ -134,6 +134,19 @@ python3 scripts/evaluate.py \
 
 三种预设：`通用场景` / `受监管行业（金融/法律/医疗）` / `实时服务（ChatBot/在线客服）`
 
+### 生成 HTML 报告
+
+```bash
+# 评估并生成可视化报告
+python3 scripts/evaluate.py --scores '{"accuracy":85,...}' --preset "通用场景" --json-output > result.json
+python3 scripts/generate_report.py --input result.json --agent-name "客服Agent v2.3" \
+  --one-liner "准确性良好但可控性不足，缺少HITL机制，不建议直接对客上线" -o report.html
+```
+
+### CI/CD 集成
+
+支持作为 GitHub Actions 质量门禁嵌入 CI 流水线（详见 SKILL.md 持续评估章节）。
+
 ## 项目结构
 
 ```
