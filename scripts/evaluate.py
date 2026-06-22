@@ -505,7 +505,21 @@ def main():
             weights = DEFAULT_WEIGHTS
 
     if weights is None:
-        weights = WEIGHT_PRESETS.get(args.preset, DEFAULT_WEIGHTS)
+        # Exact match first, then alias resolution
+        preset = args.preset
+        if preset not in WEIGHT_PRESETS:
+            # Try loading aliases from shared weights.json
+            try:
+                import json, os
+                weights_json = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "references", "weights.json")
+                with open(weights_json) as f:
+                    aliases = json.load(f).get("aliases", {})
+                resolved = aliases.get(preset, preset)
+                weights = WEIGHT_PRESETS.get(resolved, DEFAULT_WEIGHTS)
+            except (FileNotFoundError, json.JSONDecodeError):
+                weights = DEFAULT_WEIGHTS
+        else:
+            weights = WEIGHT_PRESETS[preset]
 
     # 执行评估
     result = evaluate(scores, weights)

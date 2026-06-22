@@ -139,6 +139,10 @@ def generate_improvement_items(scores, weights):
         items.append((name, s, loss, diag, key))
     items.sort(key=lambda x: x[2], reverse=True)
 
+    items = [x for x in items if x[2] > 0]  # 过滤无损失的维度
+    if not items:
+        return '<p>所有维度表现良好，无明显改进项。</p>'
+
     html_items = []
     priorities = [(0, "P0 · 立即处理", "p0"), (1, "P1 · 本迭代处理", "p1"), (2, "P2 · 后续迭代", "p2")]
     for idx, (name, s, loss, diag, key) in enumerate(items[:3]):
@@ -194,7 +198,7 @@ def generate_apm_rows(scores):
         else:
             status = "pass"
 
-        threshold, pass_msg, fail_msg = apm_diagnostics[name]
+        _, pass_msg, fail_msg = apm_diagnostics[name]
         desc = pass_msg if status == "pass" else fail_msg
         icon = "✓" if status == "pass" else "—" if status == "warn" else "✗"
         status_class = "pass" if status == "pass" else "warn" if status == "warn" else "fail"
