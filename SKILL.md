@@ -239,6 +239,7 @@ HTML 报告特性：
 | 7 | **漂移检测已启用** | 有输入分布变化、性能衰减、决策不确定性趋势的监控 | 建议部署后前两周每日评估一次 |
 | 8 | **模型路由策略已评估** | 是否按任务复杂度动态分发模型（SLM/LLM），简单任务不被过度分配大模型 | 建议引入语义缓存和模型路由以优化成本 |
 | 9 | **Kill Switch 已配置** | 高风险操作（数据库写入、外部 API 调用、资金操作）有强制熔断机制 | 标注为「阻断项」，必须在上线前配置 |
+| 10 | **回归测试覆盖** | 历史失败案例集自动化回归，每次发布前重跑，确保不引入退化（Braintrust 2026 推荐） | 建议建立回归案例库，CI 中自动执行 |
 
 🔴 **CHECKPOINT — 交叉验证**：若评估由单人完成，建议引入第二评估者独立打分。
 
@@ -347,6 +348,30 @@ HTML 报告特性：
 ```
 
 评估报告中建议增加「CI/CD 集成建议」章节，根据当前成熟度等级推荐应优先接入的自动化检查项。
+
+### GitHub Actions 集成示例（L4+ 企业级推荐）
+
+参照 Callsphere 2026 和 AWS Agent Evaluation 2025 的最佳实践，将 Agent 质量评估嵌入 CI 流水线：
+
+```yaml
+# .github/workflows/agent-eval.yml
+name: Agent Quality Gate
+on: [pull_request, push]
+jobs:
+  evaluate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run Agent Evaluation
+        run: |
+          python scripts/evaluate.py --scores '{"accuracy":${ACC},"stability":${STB},...}' --preset "通用场景" --json-output > result.json
+      - name: Quality Gate
+        run: |
+          SCORE=$(python -c "import json; print(json.load(open('result.json'))['total_score'])")
+          if [ $(echo "$SCORE < 70" | bc) -eq 1 ]; then echo "质量门禁未通过: $SCORE < 70"; exit 1; fi
+      - name: Generate Report
+        run: python scripts/generate_report.py --input result.json -o report.html
+```
 
 ## 重要规则
 

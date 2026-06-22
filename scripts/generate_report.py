@@ -256,6 +256,7 @@ def generate_gate_section(total_score, scores):
         ("漂移检测已启用",         "通过" if s.get("stability",0) >= 75 else "待部署",   s.get("stability",50)),
         ("模型路由已评估",         "通过" if s.get("cost",0) >= 75 else "待评估",        s.get("cost",50)),
         ("Kill Switch 已配置",    "通过" if s.get("controllability",0) >= 75 else "待配置", s.get("controllability",50)),
+        ("回归测试覆盖",           "通过" if total_score >= 75 else "待建立",                total_score),
     ]
     items = []
     all_pass = True
