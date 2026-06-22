@@ -156,20 +156,44 @@ python3 scripts/evaluate.py --scores '...' -o report.txt
 
 脚本将自动计算：
 - 各维度加权得分
-- 综合总分与等级（A-E）
+- 综合总分与等级（A-E）及成熟度等级（L1-L5）
+- 彩色终端输出：维度表格 + 进度条 + P0/P1/P2 分类建议
 - 按加权损失分排序的改进建议
-- 五个 APM 管控点状态评估
+- 七个 APM 管控点状态评估
 
 若脚本执行失败 → 使用手动计算公式：总分 = Σ(维度得分 × 权重)，各维度加权损失分 = (100 - 维度得分) × 权重，参照 `references/evaluation_framework.md`「五、总分计算」的等级表判定等级。手动计算时在报告中标注「手动计算」。
 
 ### 步骤 4：生成评估报告
 
 **输入**：评估计算结果（总分、各维度得分、APM评估、改进建议）
-**输出**：完整的 HTML/Markdown 评估报告
+**输出**：可视化 HTML 评估报告（含颜色标记、进度条、卡片式布局）
 
-基于评估结果，使用 `assets/report_template.md` 作为结构模板生成完整的评估报告。
+**方式一：使用 HTML 报告生成器（推荐）**
 
-若模板文件不可用 → 直接按以下结构生成报告：
+```bash
+# 从 evaluate.py 的 JSON 输出生成 HTML 报告
+python3 scripts/evaluate.py --scores '{"accuracy":85,...}' --json-output > result.json
+python3 scripts/generate_report.py --input result.json --preset "通用场景" -o report.html
+
+# 或一步到位，直接传分数
+python3 scripts/generate_report.py \
+  --scores '{"accuracy":85,"stability":70,"speed":60,"controllability":75,"cost":80,"compliance":55}' \
+  --preset "通用场景" --agent-name "客服Agent v1.2" -o report.html
+```
+
+HTML 报告特性：
+- 得分卡片 + 颜色标记（绿/蓝/黄/红对应 A/B/C/D 级）
+- 六维度进度条可视化
+- P0/P1/P2 改进建议独立卡片（红/黄/蓝边框）
+- 发展路径时间线图
+- 部署门禁网格 + 通过/失败结论条
+- 响应式布局，移动端适配
+
+**方式二：使用 Markdown 模板**
+
+基于 `assets/report_template.md` 填充生成 Markdown 报告，适用于纯文本场景。
+
+**两种方式均不可用时的回退结构**：
 
 1. **评估总览**：总分、等级、成熟度等级、可上线状态、六维得分一览、一句话结论
 2. **各维度诊断分析**：按诊断式核心问题逐项作答（如"错误集中在哪类任务？"）、反模式命中、APM关联

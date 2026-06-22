@@ -323,53 +323,102 @@ def evaluate(scores: Dict[str, float], weights: Dict[str, float]) -> Dict:
 
 
 def format_report(result: Dict) -> str:
-    """格式化评估报告"""
+    """格式化评估报告（彩色终端输出）"""
+    # ANSI 颜色
+    C = {
+        "reset": "\033[0m", "bold": "\033[1m", "dim": "\033[2m",
+        "red": "\033[31m", "green": "\033[32m", "yellow": "\033[33m",
+        "blue": "\033[34m", "magenta": "\033[35m", "cyan": "\033[36m",
+        "white": "\033[37m",
+        "bg_green": "\033[42m", "bg_red": "\033[41m", "bg_yellow": "\033[43m",
+        "bg_blue": "\033[44m",
+    }
+    G = get_grade
+    grade_color = {"A": "green", "B": "blue", "C": "yellow", "D": "yellow", "E": "red"}
+
     lines = []
-    lines.append("=" * 60)
-    lines.append("          Agent 质量评估报告 (OPI Framework)")
-    lines.append("=" * 60)
-    lines.append("")
-    lines.append(f"总分: {result['total_score']:.1f} / 100  等级: {result['grade']}")
-    lines.append(f"结论: {result['grade_description']}")
-    lines.append("")
-    lines.append("-" * 60)
-    lines.append("权重配置")
-    lines.append("-" * 60)
-    for dim_key, w in result["weights_used"].items():
-        meta = DIMENSION_META[dim_key]
-        lines.append(f"  {meta['name']}: {w:.1f}%")
+    # 标题
+    lines.append(f"{C['bold']}{C['cyan']}╔{'═'*58}╗{C['reset']}")
+    lines.append(f"{C['bold']}{C['cyan']}║{C['reset']}  {C['bold']}Agent 质量评估报告 (OPI Framework){C['reset']}" + " " * 24 + f"{C['bold']}{C['cyan']}║{C['reset']}")
+    lines.append(f"{C['bold']}{C['cyan']}╚{'═'*58}╝{C['reset']}")
     lines.append("")
 
-    lines.append("-" * 60)
-    lines.append("各维度得分")
-    lines.append("-" * 60)
+    # 总分卡片
+    gc = grade_color.get(result["grade"], "white")
+    lines.append(f"  {C['bold']}总分: {C[gc]}{result['total_score']:.1f}{C['reset']} / 100  "
+                 f"  {C['bold']}等级: {C[gc]}{result['grade']}{C['reset']}  "
+                 f"  {C['dim']}成熟度: L{get_maturity_for_report(result['total_score'])}{C['reset']}")
+    lines.append(f"  {C['dim']}{result['grade_description']}{C['reset']}")
+    lines.append("")
+
+    # 六维得分表格
+    lines.append(f"  {C['bold']}┌──────────────────────┬──────┬──────┬──────┬──────────┐{C['reset']}")
+    lines.append(f"  {C['bold']}│ 评估轴                │ 得分  │ 权重  │ 加权  │ 损失分    │{C['reset']}")
+    lines.append(f"  {C['bold']}├──────────────────────┼──────┼──────┼──────┼──────────┤{C['reset']}")
     for d in result["dimensions"]:
-        bar = "█" * int(d["score"] / 5) + "░" * (20 - int(d["score"] / 5))
-        lines.append(f"  [{d['dimension_group']}] {d['name']}")
-        lines.append(f"  得分: {d['score']:.0f}/100 [{bar}] {d['grade']}")
-        lines.append(f"  权重: {d['weight']:.1f}%  加权分: {d['weighted_score']:.1f}")
-        lines.append("")
-
-    lines.append("-" * 60)
-    lines.append("APM 管控点评估")
-    lines.append("-" * 60)
-    for point, status in result["apm_assessment"].items():
-        lines.append(f"  {status}")
+        s = d["score"]
+        gc = "green" if s >= 85 else "blue" if s >= 70 else "yellow" if s >= 55 else "red"
+        bar_w = s // 5
+        bar_full = "█" * bar_w
+        bar_empty = "░" * (20 - bar_w)
+        loss = round((100 - s) * d["weight"] / 100, 1)
+        lines.append(
+            f"  {C['bold']}│{C['reset']} {d['name']:<20s} "
+            f"{C['bold']}{C[gc]}{d['score']:>4d}{C['reset']}  "
+            f"{d['weight']:>4.0f}%  "
+            f"{d['weighted_score']:>5.1f}  "
+            f"{C['yellow'] if loss > 5 else C['dim']}{loss:>6.1f}{C['reset']}  "
+            f"{C['bold']}│{C['reset']}"
+        )
+        lines.append(
+            f"  {C['bold']}│{C['reset']} {C[gc]}{bar_full}{C['dim']}{bar_empty}{C['reset']}       "
+            f"{C['dim']}{get_grade_short(d['grade'])}{C['reset']}            {C['bold']}│{C['reset']}"
+        )
+    lines.append(f"  {C['bold']}└──────────────────────┴──────┴──────┴──────┴──────────┘{C['reset']}")
     lines.append("")
 
-    lines.append("-" * 60)
-    lines.append("改进建议（按加权损失分排序）")
-    lines.append("-" * 60)
-    for i, sug in enumerate(result["improvement_suggestions"], 1):
-        lines.append(f"\n  {i}. [{sug['priority']}优先级] {sug['name']}")
-        lines.append(f"     得分: {sug['score']:.0f}  加权损失分: {sug['weighted_loss']:.1f}")
-        for s in sug["suggestions"]:
-            lines.append(f"     • {s}")
+    # 改进建议
+    lines.append(f"  {C['bold']}改进建议（按加权损失分排序）{C['reset']}")
+    lines.append(f"  {C['dim']}{'─'*46}{C['reset']}")
+    for i, sug in enumerate(result["improvement_suggestions"][:3], 1):
+        p_color = "red" if "高" in sug.get("priority", "") else "yellow" if "中" in sug.get("priority", "") else "blue"
+        lines.append(
+            f"  {C['bold']}{C[p_color]}P{i}{C['reset']} {sug['name']} "
+            f"{C['dim']}({sug['score']:.0f}分 · 损失{sug['weighted_loss']:.1f}){C['reset']}"
+        )
+        for s in sug.get("suggestions", [])[:1]:
+            lines.append(f"     {C['dim']}→ {s}{C['reset']}")
+    lines.append("")
+
+    # APM 摘要
+    lines.append(f"  {C['bold']}APM 管控点{C['reset']}")
+    apm_statuses = result.get("apm_assessment", {})
+    apm_ok = sum(1 for v in apm_statuses.values() if "✅" in v)
+    apm_warn = sum(1 for v in apm_statuses.values() if "⚠️" in v)
+    apm_fail = sum(1 for v in apm_statuses.values() if "❌" in v)
+    lines.append(
+        f"  {C['green']}✅ {apm_ok} 达标{C['reset']}  "
+        f"{C['yellow']}⚠️ {apm_warn} 部分{C['reset']}  "
+        f"{C['red']}❌ {apm_fail} 未达标{C['reset']}"
+    )
 
     lines.append("")
-    lines.append("=" * 60)
-
+    lines.append(f"{C['bold']}{C['cyan']}{'═'*60}{C['reset']}")
     return "\n".join(lines)
+
+
+def get_maturity_for_report(score: float) -> str:
+    """从分数推导成熟度等级"""
+    if score >= 85: return "5"
+    if score >= 70: return "4"
+    if score >= 55: return "3"
+    if score >= 40: return "2"
+    return "1"
+
+
+def get_grade_short(grade_str: str) -> str:
+    grades = {"优秀": "优", "良好": "良", "及格": "及", "较差": "差", "不合格": "劣"}
+    return grades.get(grade_str, grade_str)
 
 
 def load_config(config_path: str) -> Dict:
