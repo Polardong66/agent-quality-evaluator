@@ -6,206 +6,499 @@
 <title>Agent 质量评估报告 — {{agent_name}}</title>
 <style>
   :root {
-    --bg: #fafbfc;
-    --card-bg: #fff;
-    --text: #1a1a2e;
-    --text-secondary: #64748b;
-    --border: #e2e8f0;
-    --accent: #2563eb;
-    --red: #dc2626;
-    --amber: #f59e0b;
-    --green: #16a34a;
-    --tag-bg: #f1f5f9;
-    --p0-bg: #fef2f2;
-    --p1-bg: #fffbeb;
-    --p2-bg: #f0f9ff;
+    --paper: #fdfaf5;
+    --card: #ffffff;
+    --ink: #1b1b1b;
+    --ink-secondary: #6b6b6b;
+    --ink-tertiary: #9b9b9b;
+    --line: #e8e3da;
+    --line-light: #f0ece5;
+    --accent: #1d4ed8;
+    --accent-light: #eff4ff;
+    --accent-warm: #c2410c;
+    --red: #b91c1c;
+    --red-bg: #fef5f5;
+    --amber: #a16207;
+    --amber-bg: #fffdf5;
+    --green: #15803d;
+    --green-bg: #f5fdf7;
+    --blue-bg: #eff4ff;
+    --p0-border: #dc2626;
+    --p1-border: #d97706;
+    --p2-border: #3b82f6;
   }
-  * { margin:0; padding:0; box-sizing:border-box; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
-    background: var(--bg);
-    color: var(--text);
-    line-height: 1.6;
-    padding: 32px 16px;
+    font-family: "PingFang SC", "Microsoft YaHei", "Noto Sans SC", -apple-system, sans-serif;
+    background: var(--paper);
+    color: var(--ink);
+    line-height: 1.7;
+    -webkit-font-smoothing: antialiased;
+    text-wrap: pretty;
   }
   .report {
-    max-width: 960px;
+    max-width: 860px;
     margin: 0 auto;
+    padding: 56px 32px 64px;
   }
-  .header {
-    background: linear-gradient(135deg, #1e293b, #334155);
-    color: #fff;
-    border-radius: 12px;
-    padding: 32px;
+
+  /* ---- Masthead ---- */
+  .masthead {
+    margin-bottom: 56px;
+  }
+  .masthead h1 {
+    font-size: 28px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    margin-bottom: 8px;
+  }
+  .masthead .subtitle {
+    font-size: 14px;
+    color: var(--ink-secondary);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 24px;
+  }
+  .masthead .subtitle span { white-space: nowrap; }
+  .masthead .subtitle .sep { color: var(--line); }
+
+  /* ---- Section ---- */
+  .section { margin-bottom: 48px; }
+  .section-head {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
     margin-bottom: 24px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--line);
   }
-  .header h1 { font-size: 24px; font-weight: 700; margin-bottom: 8px; }
-  .header .meta { color: #94a3b8; font-size: 14px; }
-  .card {
-    background: var(--card-bg);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 24px;
-    margin-bottom: 20px;
-    box-shadow: 0 1px 3px rgba(0,0,0,.04);
-  }
-  .card h2 {
-    font-size: 18px;
+  .section-head h2 {
+    font-size: 17px;
     font-weight: 700;
-    margin-bottom: 16px;
-    padding-bottom: 8px;
-    border-bottom: 2px solid var(--border);
+    letter-spacing: 0.01em;
   }
+  .section-head .num {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--ink-tertiary);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ---- Score Hero ---- */
   .score-hero {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 16px;
-    margin-bottom: 20px;
+    grid-template-columns: 1.2fr 1fr 1fr;
+    gap: 1px;
+    background: var(--line);
+    border: 1px solid var(--line);
+    border-radius: 2px;
+    margin-bottom: 32px;
+    overflow: hidden;
   }
-  .score-box {
-    text-align: center;
-    padding: 20px 12px;
-    border-radius: 8px;
-    background: var(--tag-bg);
+  .score-hero .hero-main {
+    background: var(--card);
+    padding: 36px 32px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
   }
-  .score-box .value { font-size: 36px; font-weight: 800; }
-  .score-box .label { font-size: 13px; color: var(--text-secondary); margin-top: 4px; }
-  .score-box.grade-a { background: #f0fdf4; .value { color: var(--green); } }
-  .score-box.grade-b { background: #eff6ff; .value { color: var(--accent); } }
-  .score-box.grade-c { background: #fffbeb; .value { color: var(--amber); } }
-  .score-box.grade-d { background: #fff7ed; .value { color: #ea580c; } }
-  .score-box.grade-e { background: #fef2f2; .value { color: var(--red); } }
-  table {
+  .hero-main .big-score {
+    font-size: 72px;
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: -0.04em;
+  }
+  .hero-main .big-score.a { color: var(--green); }
+  .hero-main .big-score.b { color: var(--accent); }
+  .hero-main .big-score.c { color: var(--amber); }
+  .hero-main .big-score.d,
+  .hero-main .big-score.e { color: var(--red); }
+  .hero-main .score-meta {
+    margin-top: 8px;
+    font-size: 13px;
+    color: var(--ink-secondary);
+  }
+  .hero-side {
+    background: var(--card);
+    padding: 32px 24px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 4px;
+  }
+  .hero-side .side-label {
+    font-size: 11px;
+    color: var(--ink-tertiary);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 2px;
+  }
+  .hero-side .side-value {
+    font-size: 18px;
+    font-weight: 700;
+  }
+  .hero-side .side-desc {
+    font-size: 12px;
+    color: var(--ink-secondary);
+  }
+
+  /* ---- Dimension Table ---- */
+  .dim-table {
     width: 100%;
     border-collapse: collapse;
     font-size: 14px;
   }
-  thead th {
-    background: #f8fafc;
-    padding: 10px 12px;
+  .dim-table thead th {
     text-align: left;
-    font-weight: 600;
-    border-bottom: 2px solid var(--border);
-    white-space: nowrap;
+    font-weight: 500;
+    font-size: 11px;
+    color: var(--ink-tertiary);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 0 0 10px 12px;
+    border-bottom: 1px solid var(--line);
   }
-  tbody td {
-    padding: 10px 12px;
-    border-bottom: 1px solid var(--border);
-  }
-  .dim-bar {
-    display: inline-block;
-    height: 8px;
-    border-radius: 4px;
-    margin-right: 8px;
+  .dim-table thead th:last-child { text-align: right; padding-right: 12px; }
+  .dim-table tbody td {
+    padding: 14px 12px;
+    border-bottom: 1px solid var(--line-light);
     vertical-align: middle;
   }
-  .tag {
-    display: inline-block;
-    padding: 2px 8px;
-    border-radius: 4px;
-    font-size: 12px;
+  .dim-table .dim-name {
     font-weight: 600;
+    font-size: 14px;
   }
-  .tag-red { background: #fef2f2; color: #b91c1c; }
-  .tag-amber { background: #fffbeb; color: #92400e; }
-  .tag-green { background: #f0fdf4; color: #15803d; }
-  .tag-blue { background: #eff6ff; color: #1d4ed8; }
-  .status-ok { color: var(--green); } .status-warn { color: var(--amber); } .status-fail { color: var(--red); }
-  .improvement-row { margin-bottom: 12px; padding: 12px 16px; border-radius: 8px; border-left: 4px solid; }
-  .improvement-row.p0 { background: var(--p0-bg); border-color: var(--red); }
-  .improvement-row.p1 { background: var(--p1-bg); border-color: var(--amber); }
-  .improvement-row.p2 { background: var(--p2-bg); border-color: var(--accent); }
-  .improvement-row .pri { font-weight: 700; font-size: 13px; margin-bottom: 4px; }
-  .improvement-row .detail { font-size: 13px; color: var(--text-secondary); }
-  .timeline { display: flex; gap: 0; align-items: flex-start; margin: 16px 0; }
-  .timeline-item { flex: 1; text-align: center; position: relative; padding: 0 8px; }
-  .timeline-item::after { content: "→"; position: absolute; right: -8px; top: 10px; color: var(--text-secondary); }
-  .timeline-item:last-child::after { content: none; }
-  .timeline-item .level { font-size: 20px; font-weight: 800; color: var(--accent); }
-  .timeline-item .desc { font-size: 12px; color: var(--text-secondary); margin-top: 4px; }
-  .gate-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
-  .gate-item { padding: 12px; border-radius: 8px; background: var(--tag-bg); font-size: 13px; }
-  .gate-item .gate-status { font-weight: 700; }
-  .conclusion-bar {
-    border-radius: 8px;
-    padding: 16px 20px;
-    font-weight: 600;
+  .dim-table .dim-cat {
+    font-size: 12px;
+    color: var(--ink-tertiary);
+  }
+  .dim-table .dim-score {
+    font-weight: 700;
+    font-size: 18px;
+    text-align: center;
+  }
+  .dim-table .dim-score.a { color: var(--green); }
+  .dim-table .dim-score.b { color: var(--accent); }
+  .dim-table .dim-score.c { color: var(--amber); }
+  .dim-table .dim-score.d,
+  .dim-table .dim-score.e { color: var(--red); }
+  .dim-bar-cell { width: 180px; }
+  .dim-bar-track {
+    height: 6px;
+    background: var(--line-light);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+  .dim-bar-fill { height: 100%; border-radius: 3px; transition: width 0.6s ease; }
+  .dim-bar-fill.a { background: var(--green); }
+  .dim-bar-fill.b { background: var(--accent); }
+  .dim-bar-fill.c { background: var(--amber); }
+  .dim-bar-fill.d,
+  .dim-bar-fill.e { background: var(--red); }
+  .dim-loss {
+    font-size: 12px;
+    color: var(--ink-tertiary);
+    text-align: right;
+    white-space: nowrap;
+  }
+  .dim-loss.warn { color: var(--amber); font-weight: 600; }
+  .dim-loss.crit { color: var(--red); font-weight: 600; }
+
+  /* ---- Diagnosis Sub-sections ---- */
+  .diagnosis-block { margin-bottom: 28px; }
+  .diagnosis-block h3 {
     font-size: 15px;
+    font-weight: 700;
+    margin-bottom: 10px;
+  }
+  .diagnosis-block .diag-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    margin-bottom: 12px;
+  }
+  .diagnosis-block .diag-table td {
+    padding: 8px 0;
+    border-bottom: 1px solid var(--line-light);
+    vertical-align: top;
+    line-height: 1.6;
+  }
+  .diagnosis-block .diag-table td:first-child {
+    width: 35%;
+    color: var(--ink-secondary);
+    padding-right: 20px;
+  }
+  .diagnosis-block .diag-apm {
+    font-size: 12px;
+    color: var(--ink-tertiary);
+    margin-top: 6px;
+  }
+
+  /* ---- APM Grid ---- */
+  .apm-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1px;
+    background: var(--line-light);
+    border: 1px solid var(--line-light);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .apm-item {
+    background: var(--card);
+    padding: 16px 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .apm-item .apm-icon { font-size: 16px; flex-shrink: 0; }
+  .apm-item .apm-name { font-size: 14px; font-weight: 600; min-width: 70px; }
+  .apm-item .apm-desc { font-size: 12px; color: var(--ink-secondary); }
+
+  /* ---- Improvement Cards ---- */
+  .improvement-item {
+    padding: 20px 24px;
+    margin-bottom: 12px;
+    border-left: 3px solid;
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-left-width: 3px;
+  }
+  .improvement-item.p0 { border-left-color: var(--p0-border); background: var(--red-bg); border-color: #fecaca; }
+  .improvement-item.p1 { border-left-color: var(--p1-border); background: var(--amber-bg); border-color: #fde68a; }
+  .improvement-item.p2 { border-left-color: var(--p2-border); background: var(--blue-bg); border-color: #bfdbfe; }
+  .improvement-item .improve-head {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    margin-bottom: 6px;
+  }
+  .improvement-item .improve-pri {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .improvement-item.p0 .improve-pri { color: var(--red); }
+  .improvement-item.p1 .improve-pri { color: var(--amber); }
+  .improvement-item.p2 .improve-pri { color: var(--accent); }
+  .improvement-item .improve-dim {
+    font-size: 14px;
+    font-weight: 700;
+  }
+  .improvement-item .improve-meta {
+    font-size: 12px;
+    color: var(--ink-tertiary);
+  }
+  .improvement-item .improve-detail {
+    font-size: 13px;
+    color: var(--ink-secondary);
+    margin-top: 4px;
+    line-height: 1.6;
+  }
+
+  /* ---- Timeline ---- */
+  .plan-timeline {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 20px;
     margin-top: 16px;
   }
-  .conclusion-bar.pass { background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; }
-  .conclusion-bar.fail { background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; }
-  @media (max-width: 640px) {
-    .score-hero { grid-template-columns: repeat(2, 1fr); }
-    .gate-grid { grid-template-columns: repeat(2, 1fr); }
-    body { padding: 16px 8px; }
+  .plan-stage {
+    padding: 20px;
+    border: 1px solid var(--line);
+    border-radius: 2px;
+  }
+  .plan-stage .stage-time {
+    font-size: 11px;
+    color: var(--ink-tertiary);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 8px;
+  }
+  .plan-stage .stage-level {
+    font-size: 24px;
+    font-weight: 800;
+    margin-bottom: 4px;
+  }
+  .plan-stage .stage-desc {
+    font-size: 13px;
+    color: var(--ink-secondary);
+    line-height: 1.5;
+  }
+
+  /* ---- Gate Grid ---- */
+  .gate-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 1px;
+    background: var(--line-light);
+    border: 1px solid var(--line-light);
+    border-radius: 2px;
+    overflow: hidden;
+    margin-bottom: 16px;
+  }
+  .gate-item {
+    background: var(--card);
+    padding: 14px 16px;
+    font-size: 13px;
+  }
+  .gate-item .gate-status { font-weight: 700; margin-bottom: 2px; }
+  .gate-item .gate-detail { font-size: 11px; color: var(--ink-tertiary); }
+
+  /* ---- Conclusion ---- */
+  .conclusion {
+    padding: 16px 20px;
+    font-weight: 600;
+    font-size: 14px;
+  }
+  .conclusion.pass { background: var(--green-bg); color: var(--green); border: 1px solid #bbf7d0; }
+  .conclusion.fail { background: var(--red-bg); color: var(--red); border: 1px solid #fecaca; }
+
+  /* ---- Oneliner ---- */
+  .oneliner {
+    padding: 18px 22px;
+    background: var(--card);
+    border: 1px solid var(--line);
+    font-size: 14px;
+    line-height: 1.7;
+    margin-top: 24px;
+  }
+  .oneliner strong { color: var(--ink); }
+
+  /* ---- Footer ---- */
+  .footer {
+    margin-top: 64px;
+    padding-top: 20px;
+    border-top: 1px solid var(--line);
+    font-size: 12px;
+    color: var(--ink-tertiary);
+    text-align: center;
+  }
+
+  /* ---- Appendix ---- */
+  .appendix-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    margin-top: 12px;
+  }
+  .appendix-table td {
+    padding: 6px 0;
+    border-bottom: 1px solid var(--line-light);
+  }
+  .appendix-table td:first-child { font-weight: 600; width: 100px; }
+
+  @media (max-width: 680px) {
+    .report { padding: 32px 16px 40px; }
+    .score-hero { grid-template-columns: 1fr; }
+    .apm-grid { grid-template-columns: 1fr; }
+    .gate-grid { grid-template-columns: 1fr 1fr; }
+    .plan-timeline { grid-template-columns: 1fr; }
   }
 </style>
 </head>
 <body>
 <div class="report">
 
-  <!-- Header -->
-  <div class="header">
+  <!-- Masthead -->
+  <div class="masthead">
     <h1>Agent 质量评估报告</h1>
-    <div class="meta">
-      评估对象: {{agent_name}} &nbsp;|&nbsp;
-      评估日期: {{date}} &nbsp;|&nbsp;
-      场景: {{scenario}} &nbsp;|&nbsp;
-      模式: {{eval_mode}}
+    <div class="subtitle">
+      <span>{{agent_name}}</span>
+      <span class="sep">·</span>
+      <span>{{date}}</span>
+      <span class="sep">·</span>
+      <span>{{scenario}}</span>
+      <span class="sep">·</span>
+      <span>{{eval_mode}}</span>
     </div>
   </div>
 
   <!-- 一、评估总览 -->
-  <div class="card">
-    <h2>一、评估总览</h2>
-    <div class="score-hero">
-      <div class="score-box grade-{{grade_class}}"><div class="value">{{total_score}}</div><div class="label">综合得分 / 100</div></div>
-      <div class="score-box grade-{{grade_class}}"><div class="value">{{grade}}</div><div class="label">质量等级</div></div>
-      <div class="score-box"><div class="value">L{{maturity}}</div><div class="label">成熟度</div></div>
-      <div class="score-box"><div class="value">{{deploy_status_short}}</div><div class="label">上线状态</div></div>
+  <div class="section">
+    <div class="section-head">
+      <span class="num">01</span>
+      <h2>评估总览</h2>
     </div>
 
-    <table>
+    <div class="score-hero">
+      <div class="hero-main">
+        <div class="big-score {{grade_class}}">{{total_score}}</div>
+        <div class="score-meta">综合得分 / 100 &nbsp;·&nbsp; 等级 {{grade}} &nbsp;·&nbsp; L{{maturity}}</div>
+      </div>
+      <div class="hero-side">
+        <div class="side-label">成熟度</div>
+        <div class="side-value">L{{maturity}}</div>
+        <div class="side-desc">{{maturity_name}}</div>
+      </div>
+      <div class="hero-side">
+        <div class="side-label">上线状态</div>
+        <div class="side-value">{{deploy_status_short}}</div>
+        <div class="side-desc">基于九项门禁评估</div>
+      </div>
+    </div>
+
+    <table class="dim-table">
       <thead>
-        <tr><th>维度</th><th>评估轴</th><th style="text-align:center">得分</th><th style="text-align:center">权重</th><th style="text-align:center">加权分</th><th style="text-align:center">损失分</th><th>可视化</th></tr>
+        <tr>
+          <th>评估轴</th>
+          <th style="text-align:center">得分</th>
+          <th style="text-align:center">权重</th>
+          <th style="text-align:right">加权分</th>
+          <th style="text-align:right">损失分</th>
+          <th>分布</th>
+        </tr>
       </thead>
       <tbody>
         {{dimension_rows}}
       </tbody>
     </table>
 
-    <p style="margin-top:16px;padding:12px 16px;background:var(--tag-bg);border-radius:8px;font-size:14px;">
+    <div class="oneliner">
       <strong>一句话结论：</strong>{{one_liner}}
-    </p>
+    </div>
   </div>
 
   <!-- 二、各维度诊断分析 -->
-  <div class="card">
-    <h2>二、各维度诊断分析</h2>
+  <div class="section">
+    <div class="section-head">
+      <span class="num">02</span>
+      <h2>各维度诊断分析</h2>
+    </div>
     {{diagnosis_sections}}
   </div>
 
-  <!-- 三、APM 管控点 -->
-  <div class="card">
-    <h2>三、APM 管控点评估</h2>
-    <table>
-      <thead><tr><th>管控点</th><th style="text-align:center">状态</th><th>说明</th></tr></thead>
-      <tbody>{{apm_rows}}</tbody>
-    </table>
+  <!-- 三、APM 管控点评估 -->
+  <div class="section">
+    <div class="section-head">
+      <span class="num">03</span>
+      <h2>APM 管控点评估</h2>
+    </div>
+    <div class="apm-grid">
+      {{apm_rows}}
+    </div>
   </div>
 
   <!-- 四、改进建议与优先级 -->
-  <div class="card">
-    <h2>四、改进建议与优先级</h2>
+  <div class="section">
+    <div class="section-head">
+      <span class="num">04</span>
+      <h2>改进建议与优先级</h2>
+    </div>
     {{improvement_items}}
   </div>
 
   <!-- 五、发展路径规划 -->
-  <div class="card">
-    <h2>五、发展路径规划</h2>
-    <p style="margin-bottom:12px;"><strong>当前状态：</strong>L{{maturity}} · {{total_score}}分 · 最大短板：{{biggest_gap}}</p>
-    <div class="timeline">
+  <div class="section">
+    <div class="section-head">
+      <span class="num">05</span>
+      <h2>发展路径规划</h2>
+    </div>
+    <p style="font-size:14px;color:var(--ink-secondary);margin-bottom:20px;">
+      当前状态：L{{maturity}} · {{total_score}}分 · 最大短板：{{biggest_gap}}
+    </p>
+    <div class="plan-timeline">
       {{timeline_items}}
     </div>
   </div>
@@ -214,22 +507,24 @@
   {{gate_section}}
 
   <!-- 七、CI/CD 集成建议 -->
-  <div class="card">
-    <h2>七、CI/CD 集成建议</h2>
-    <p>{{cicd_recommendation}}</p>
-  </div>
+  {{cicd_section}}
 
   <!-- 八、附录 -->
-  <div class="card" style="font-size:13px;color:var(--text-secondary);">
-    <h2>八、附录</h2>
-    <p><strong>权重来源：</strong>{{weight_source}}</p>
-    <p><strong>历史评估：</strong>{{history_summary}}</p>
-    <p><strong>备注：</strong>{{notes}}</p>
+  <div class="section">
+    <div class="section-head">
+      <span class="num">08</span>
+      <h2>附录</h2>
+    </div>
+    <table class="appendix-table">
+      <tr><td>权重来源</td><td>{{weight_source}}</td></tr>
+      <tr><td>历史评估</td><td>{{history_summary}}</td></tr>
+      <tr><td>备注</td><td>{{notes}}</td></tr>
+    </table>
   </div>
 
-  <p style="text-align:center;color:var(--text-secondary);font-size:12px;margin-top:32px;">
-    本报告由 Agent Quality Evaluator (OPI Framework) 生成 · {{gen_time}}
-  </p>
+  <div class="footer">
+    Agent Quality Evaluator (OPI Framework) · {{gen_time}}
+  </div>
 
 </div>
 </body>

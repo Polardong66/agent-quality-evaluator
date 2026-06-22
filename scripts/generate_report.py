@@ -92,29 +92,30 @@ def get_maturity_name(score):
 
 def generate_dimension_rows(scores, weights):
     dim_map = {
-        "accuracy": "A. 准确性",
-        "stability": "B. 稳定性",
-        "speed": "C. 响应速度",
-        "controllability": "D. 可控性",
-        "cost": "E. 成本",
-        "compliance": "F. 合规性",
+        "accuracy": ("A. 准确性", "性能"),
+        "stability": ("B. 稳定性", "性能"),
+        "speed": ("C. 响应速度", "性能"),
+        "controllability": ("D. 可控性", "商业"),
+        "cost": ("E. 成本", "商业"),
+        "compliance": ("F. 合规性", "商业"),
     }
     rows = []
-    for key, name in dim_map.items():
+    for key, (name, cat) in dim_map.items():
         s = scores.get(key, 50)
         w = weights.get(key, 0)
         weighted = round(s * w / 100, 2)
         loss = round((100 - s) * w / 100, 2)
-        color = get_bar_color(s)
+        gc = "a" if s >= 85 else "b" if s >= 70 else "c" if s >= 55 else "d"
+        loss_class = "crit" if loss >= 8 else "warn" if loss >= 4 else ""
         rows.append(
             f'<tr>'
-            f'<td>{"性能" if key in ("accuracy","stability","speed") else "商业"}</td>'
-            f'<td>{name}</td>'
-            f'<td style="text-align:center"><span class="tag {get_tag_class(s)}">{s}</span></td>'
-            f'<td style="text-align:center">{w}%</td>'
-            f'<td style="text-align:center">{weighted}</td>'
-            f'<td style="text-align:center">{loss}</td>'
-            f'<td><span class="dim-bar" style="width:{s}%;background:{color}"></span></td>'
+            f'<td><span class="dim-name">{name}</span>&nbsp;'
+            f'<span class="dim-cat">{cat}</span></td>'
+            f'<td class="dim-score {gc}">{s}</td>'
+            f'<td style="text-align:center;font-size:13px;">{w}%</td>'
+            f'<td style="text-align:right;font-size:13px;">{weighted}</td>'
+            f'<td class="dim-loss {loss_class}" style="text-align:right;">{loss}</td>'
+            f'<td class="dim-bar-cell"><div class="dim-bar-track"><div class="dim-bar-fill {gc}" style="width:{s}%"></div></div></td>'
             f'</tr>'
         )
     return "\n".join(rows)
@@ -162,33 +163,36 @@ def generate_apm_rows():
     ]
     rows = []
     for name, status, desc in apm_points:
+        icon = "✅" if status == "pass" else "⚠️" if status == "warn" else "❌"
         rows.append(
-            f'<tr><td>{name}</td>'
-            f'<td style="text-align:center">{get_apm_status_icon(status)}</td>'
-            f'<td>{desc}</td></tr>'
+            f'<div class="apm-item">'
+            f'<span class="apm-icon">{icon}</span>'
+            f'<span class="apm-name">{name}</span>'
+            f'<span class="apm-desc">{desc}</span>'
+            f'</div>'
         )
     return "\n".join(rows)
 
 
 def generate_timeline(total_score):
-    current_m = get_maturity(total_score)
     current_name = get_maturity_name(total_score)
     targets = []
     if total_score < 55:
-        targets = [("1-2周", "M3", "补全基础能力"), ("1-2月", "M4", "引入监控+成本管控"), ("季度", "M5", "全链路可观测")]
+        targets = [("1–2 周", "L3", "补全基础能力与异常处理"), ("1–2 月", "L4", "引入监控告警与成本管控"), ("季度", "L5", "全链路可观测与持续评估")]
     elif total_score < 70:
-        targets = [("1-2周", "M4", "完善可观测性"), ("1-2月", "M4+", "引入模型路由"), ("季度", "M5", "AI原生转型")]
+        targets = [("1–2 周", "L4", "完善可观测性与故障恢复"), ("1–2 月", "L4+", "引入模型路由与语义缓存"), ("季度", "L5", "AI 原生转型")]
     elif total_score < 85:
-        targets = [("1-2周", "M4+", "语义缓存上线"), ("1-2月", "M5", "持续评估飞轮"), ("季度", "M5", "联邦评估治理")]
+        targets = [("1–2 周", "L4+", "语义缓存与Kill Switch上线"), ("1–2 月", "L5", "持续评估飞轮部署"), ("季度", "L5+", "联邦评估治理")]
     else:
-        targets = [("1-2周", "M5", "红队安全测试"), ("1-2月", "M5+", "多Agent编排"), ("季度", "M5++", "自治运维")]
+        targets = [("1–2 周", "L5", "红队安全测试"), ("1–2 月", "L5+", "多Agent编排优化"), ("季度", "L5++", "自治运维")]
 
     items = []
     for time_label, level, desc in targets:
         items.append(
-            f'<div class="timeline-item">'
-            f'<div class="level">{level}</div>'
-            f'<div class="desc">{time_label}<br>{desc}</div>'
+            f'<div class="plan-stage">'
+            f'<div class="stage-time">{time_label}</div>'
+            f'<div class="stage-level">{level}</div>'
+            f'<div class="stage-desc">{desc}</div>'
             f'</div>'
         )
     return "\n".join(items)
@@ -196,30 +200,48 @@ def generate_timeline(total_score):
 
 def generate_gate_section(total_score):
     if total_score < 70:
-        return '<div class="card"><h2>六、部署就绪门禁</h2><div class="conclusion-bar fail">⚠️ 当前等级不满足上线条件，门禁检查暂不适用</div></div>'
+        return (
+            '<div class="section"><div class="section-head"><span class="num">06</span><h2>部署就绪门禁</h2></div>'
+            '<div class="conclusion fail">当前等级不满足上线条件，门禁检查暂不适用</div></div>'
+        )
 
     gates = [
-        ("SLO/SLI 已定义", True), ("监控与告警已配置", True), ("Runbook 已就绪", True),
-        ("回滚方案已验证", True), ("对抗测试已通过", True), ("安全合规已确认", True),
-        ("漂移检测已启用", True), ("模型路由已评估", True), ("Kill Switch 已配置", True),
+        ("SLO / SLI 已定义", "✅"), ("监控与告警已配置", "✅"), ("Runbook 已就绪", "✅"),
+        ("回滚方案已验证", "✅"), ("对抗测试已通过", "✅"), ("安全合规已确认", "✅"),
+        ("漂移检测已启用", "✅"), ("模型路由已评估", "✅"), ("Kill Switch 已配置", "✅"),
     ]
     items = []
-    all_pass = True
-    for name, default_pass in gates:
-        icon = "✅" if default_pass else "❌"
-        if not default_pass:
-            all_pass = False
+    for name, icon in gates:
         items.append(
             f'<div class="gate-item">'
             f'<div class="gate-status">{icon} {name}</div>'
-            f'<div style="font-size:12px;color:var(--text-secondary);margin-top:4px;">待确认</div>'
+            f'<div class="gate-detail">待确认</div>'
             f'</div>'
         )
+    all_pass = True
+    conclusion = '<div class="conclusion pass">全部门禁项已通过确认，可上线</div>' if all_pass else \
+        '<div class="conclusion fail">有门禁项未通过，需修复后重新评估</div>'
 
-    conclusion = '<div class="conclusion-bar pass">✅ 建议上线：所有门禁项已通过确认</div>' if all_pass else \
-        '<div class="conclusion-bar fail">❌ 有门禁项未通过，需修复后重新评估</div>'
+    return (
+        f'<div class="section"><div class="section-head"><span class="num">06</span><h2>部署就绪门禁</h2></div>'
+        f'<div class="gate-grid">{"".join(items)}</div>{conclusion}</div>'
+    )
 
-    return f'<div class="card"><h2>六、部署就绪门禁</h2><div class="gate-grid">{"".join(items)}</div>{conclusion}</div>'
+
+def generate_cicd_section(maturity, maturity_name):
+    recs = {
+        "1": "基础回归测试 — 用历史失败案例集验证新版本不引入退化",
+        "2": "基础回归测试 — 用历史失败案例集验证新版本不引入退化",
+        "3": "端到端沙箱验证 + 成本回归测试",
+        "4": "对抗测试 + 成本回归 + 漂移检测",
+        "5": "持续评估飞轮 — 在线指标回写至测试用例集，闭环迭代",
+    }
+    rec = recs.get(maturity, recs["1"])
+    return (
+        f'<div class="section"><div class="section-head"><span class="num">07</span><h2>CI/CD 集成建议</h2></div>'
+        f'<p style="font-size:14px;color:var(--ink-secondary);">'
+        f'当前成熟度 L{maturity}（{maturity_name}），建议优先接入：{rec}</p></div>'
+    )
 
 
 def generate_diagnosis_sections(scores):
@@ -373,8 +395,7 @@ def generate_report(data, preset="通用场景"):
         "{{biggest_gap}}": biggest_gap,
         "{{timeline_items}}": generate_timeline(total_score),
         "{{gate_section}}": generate_gate_section(total_score),
-        "{{cicd_recommendation}}": f"当前成熟度 L{maturity}（{maturity_name}），建议优先接入: "
-                                   f"{'基础回归测试' if maturity <= '2' else '端到端沙箱验证+成本回归' if maturity == '3' else '对抗测试+持续评估飞轮'}",
+        "{{cicd_section}}": generate_cicd_section(maturity, maturity_name),
         "{{weight_source}}": f"场景预设: {preset}",
         "{{history_summary}}": data.get("history", "首次评估"),
         "{{notes}}": data.get("notes", "无"),
