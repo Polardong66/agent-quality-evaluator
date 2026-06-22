@@ -151,22 +151,56 @@ def generate_improvement_items(scores, weights):
     return "\n".join(html_items) if html_items else '<p>无明显短板，所有维度得分均较高。</p>'
 
 
-def generate_apm_rows():
-    apm_points = [
-        ("规划控制", "warn", "任务拆解待验证"),
-        ("记忆控制", "warn", "上下文完整性待确认"),
-        ("工具控制", "warn", "工具选择准确性待评估"),
-        ("行动控制", "warn", "输出格式稳定性待确认"),
-        ("编排控制", "warn", "多Agent协作待评估"),
-        ("安全控制", "warn", "护栏覆盖度待验证"),
-        ("全流程可观测性", "warn", "审计日志待完善"),
-    ]
+def generate_apm_rows(scores):
+    """根据各维度得分生成有诊断价值的 APM 管控点描述"""
+    dim_to_apm = {
+        "accuracy": ("规划控制", "行动控制"),
+        "stability": ("工具控制", "记忆控制"),
+        "speed": ("全流程可观测性",),
+        "controllability": ("行动控制", "编排控制"),
+        "cost": ("记忆控制",),
+        "compliance": ("安全控制",),
+    }
+    apm_diagnostics = {
+        "规划控制":     (80, "任务拆解合理，多方案对比评估到位", "推理步骤缺少备选方案评估，边界场景覆盖不足"),
+        "记忆控制":     (75, "上下文精准切题，Token 受控", "超长对话场景关键信息遗漏，上下文未压缩导致 Token 膨胀"),
+        "工具控制":     (75, "工具选择准确，参数正确率高，有错误恢复", "工具调用失败无降级机制，API 异常直接抛出"),
+        "行动控制":     (75, "输出格式稳定，内容边界受控", "高风险操作无熔断机制，缺少 HITL 干预断点"),
+        "编排控制":     (70, "子任务分配合理，收敛稳定", "多步骤任务无收敛性校验，存在冗余迭代"),
+        "安全控制":     (75, "全链路护栏覆盖，对抗鲁棒性强", "工具调用返回内容未经安全校验直接拼接进输出"),
+        "全流程可观测性": (75, "各环节耗时可见，审计日志完整", "中间步骤不可追踪，P95 延迟高但定位不到瓶颈环节"),
+    }
+
+    # Calculate APM status based on related dimension scores
+    apm_statuses = {}
+    for dim_key, apm_keys in dim_to_apm.items():
+        s = scores.get(dim_key, 50)
+        status = "pass" if s >= 85 else "warn" if s >= 60 else "fail"
+        for apm_key in apm_keys:
+            if apm_key not in apm_statuses:
+                apm_statuses[apm_key] = []
+            apm_statuses[apm_key].append(status)
+
     rows = []
-    for name, status, desc in apm_points:
-        icon = "✅" if status == "pass" else "⚠️" if status == "warn" else "❌"
+    apm_order = ["规划控制", "记忆控制", "工具控制", "行动控制", "编排控制", "安全控制", "全流程可观测性"]
+    for name in apm_order:
+        statuses = apm_statuses.get(name, ["warn"])
+        # worst status wins
+        if "fail" in statuses:
+            status = "fail"
+        elif "warn" in statuses:
+            status = "warn"
+        else:
+            status = "pass"
+
+        threshold, pass_msg, fail_msg = apm_diagnostics[name]
+        desc = pass_msg if status == "pass" else fail_msg
+        icon = "✓" if status == "pass" else "—" if status == "warn" else "✗"
+        status_class = "pass" if status == "pass" else "warn" if status == "warn" else "fail"
+
         rows.append(
-            f'<div class="apm-item">'
-            f'<span class="apm-icon">{icon}</span>'
+            f'<div class="apm-row {status_class}">'
+            f'<span class="apm-status">{icon}</span>'
             f'<span class="apm-name">{name}</span>'
             f'<span class="apm-desc">{desc}</span>'
             f'</div>'
@@ -390,7 +424,7 @@ def generate_report(data, preset="通用场景"):
         "{{deploy_status_short}}": deploy_short,
         "{{dimension_rows}}": generate_dimension_rows(scores, weights),
         "{{diagnosis_sections}}": generate_diagnosis_sections(scores),
-        "{{apm_rows}}": generate_apm_rows(),
+        "{{apm_rows}}": generate_apm_rows(scores),
         "{{improvement_items}}": generate_improvement_items(scores, weights),
         "{{biggest_gap}}": biggest_gap,
         "{{timeline_items}}": generate_timeline(total_score),
