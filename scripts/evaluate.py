@@ -510,7 +510,6 @@ def main():
         if preset not in WEIGHT_PRESETS:
             # Try loading aliases from shared weights.json
             try:
-                import json, os
                 weights_json = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "references", "weights.json")
                 with open(weights_json) as f:
                     aliases = json.load(f).get("aliases", {})
