@@ -383,7 +383,7 @@ def format_report(result: Dict) -> str:
     for i, sug in enumerate(result["improvement_suggestions"][:3], 1):
         p_color = "red" if "高" in sug.get("priority", "") else "yellow" if "中" in sug.get("priority", "") else "blue"
         lines.append(
-            f"  {C['bold']}{C[p_color]}P{i}{C['reset']} {sug['name']} "
+            f"  {C['bold']}{C[p_color]}P{i-1}{C['reset']} {sug['name']} "
             f"{C['dim']}({sug['score']:.0f}分 · 损失{sug['weighted_loss']:.1f}){C['reset']}"
         )
         for s in sug.get("suggestions", [])[:1]:
