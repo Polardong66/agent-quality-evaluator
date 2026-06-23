@@ -1,6 +1,6 @@
 ---
 name: agent-quality-evaluator
-description: "高代码 Agent 系统质量评估技能，基于 OPI 三层分析框架，从性能维度和商业维度共六大评估轴对 Agent 系统进行结构化评分。支持权重调整、改进建议生成和报告输出。触发词：评估Agent、Agent质量评估、Agent评分、Agent上线评审、Agent代码质量、对比Agent方案、生成质量评估报告、evaluate agent、agent quality score。"
+description: "高代码 Agent 系统质量评估技能。基于 OPI 三层分析框架，从性能维度和商业维度共六大评估轴对 Agent 系统进行结构化评分。适用于 Agent 上线评审、代码质量评估、实现方案对比。支持权重调整、改进建议生成和 HTML 报告输出。触发词：评估Agent、Agent质量评估、Agent评分、Agent上线评审、Agent代码质量、对比Agent方案、生成质量评估报告、evaluate agent、agent quality score。"
 agent_created: true
 ---
 
