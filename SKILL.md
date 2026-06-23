@@ -168,15 +168,23 @@ python3 scripts/evaluate.py --scores '...' -o report.txt
 **方式一：使用 HTML 报告生成器（推荐）**
 
 ```bash
-# 从 evaluate.py 的 JSON 输出生成 HTML 报告
-python3 scripts/evaluate.py --scores '{"accuracy":85,...}' --json-output > result.json
-python3 scripts/generate_report.py --input result.json --preset "通用场景" -o report.html
+# 进入 skill 目录后执行
+cd ~/.workbuddy/skills/agent-quality-evaluator
 
-# 或一步到位，直接传分数
-python3 scripts/generate_report.py \
+# 评估并保存 JSON 结果
+python3 scripts/evaluate.py \
   --scores '{"accuracy":85,"stability":70,"speed":60,"controllability":75,"cost":80,"compliance":55}' \
-  --preset "通用场景" --agent-name "客服Agent v1.2" -o report.html
+  --preset "通用场景" --json-output > /tmp/agent_eval_result.json
+
+# 生成 HTML 报告
+python3 scripts/generate_report.py \
+  --input /tmp/agent_eval_result.json \
+  --preset "通用场景" --agent-name "待评估Agent" \
+  --one-liner "一句话结论" \
+  -o /tmp/agent_eval_report.html
 ```
+
+**⚠️ 执行后必须调用 present_files 展示报告文件**，路径为 `/tmp/agent_eval_report.html`。
 
 HTML 报告特性：
 - 得分卡片 + 颜色标记（绿/蓝/黄/红对应 A/B/C/D 级）
@@ -201,6 +209,11 @@ HTML 报告特性：
 7. **CI/CD 集成建议**：按当前成熟度等级推荐自动化检查项
 
 输出格式：生成 HTML 报告（便于预览和分享）。若 HTML 生成失败 → 回退为 Markdown 格式。
+
+**⚠️ 报告产出检查清单**（步骤 4 完成前逐项确认）：
+1. `ls /tmp/agent_eval_report.html` 文件存在且 > 5KB
+2. 调用 `present_files` 展示 `/tmp/agent_eval_report.html`
+3. 用户预览确认后 → 步骤 5
 
 🔴 **CHECKPOINT — 确认报告**：展示报告概要（总分、等级、Top 3 改进建议）给用户确认。
 
