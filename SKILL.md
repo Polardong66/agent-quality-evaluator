@@ -126,35 +126,23 @@ Input: 看输入处理（可控性、稳定性）
 - 若用户对某个维度评分有异议 → 重新讨论该维度后修改
 - 所有维度评分确认后，才能进入步骤 3
 
-### 步骤 3：计算 + 生成 HTML 报告（自动化，不可跳过）
+### 步骤 3：生成 HTML 报告
 
-**这是产生最终交付物的步骤。禁用手动计算回退，必须运行脚本。**
+评分和权重确认后，**必须执行以下操作，不可跳过、不可用文本替代**：
 
-评分确认后，立即执行以下命令（用 Bash 工具，三行一起跑）：
+**操作 A：Bash 工具执行脚本管道**
 
-```bash
-cd ~/.workbuddy/skills/agent-quality-evaluator && \
-python3 scripts/evaluate.py --scores '<JSON_SCORES>' --preset "<PRESET_NAME>" --json-output > /tmp/agent_eval_result.json && \
-python3 scripts/generate_report.py --input /tmp/agent_eval_result.json --preset "<PRESET_NAME>" --agent-name "<AGENT_NAME>" --one-liner "<ONE_LINER>" -o /tmp/agent_eval_report.html
+```
+cd ~/.workbuddy/skills/agent-quality-evaluator && python3 scripts/evaluate.py --scores '{"accuracy":85,...}' --preset "通用场景" --json-output > /tmp/agent_eval_result.json && python3 scripts/generate_report.py --input /tmp/agent_eval_result.json --preset "通用场景" --agent-name "Agent名称" --one-liner "结论" -o /tmp/agent_eval_report.html
 ```
 
-将 `<JSON_SCORES>` 替换为步骤 2 确认的六维评分 JSON，`<PRESET_NAME>` 替换为步骤 1 选定的场景名，`<AGENT_NAME>` 为评估对象名称，`<ONE_LINER>` 为步骤 2 确认的一句话结论。
+**操作 B：present_files 展示文件**
 
-脚本自动完成：
-- 各维度加权得分、综合总分与等级（A-E）、成熟度等级（L1-L5）
-- 按加权损失分排序的改进建议
-- 七个 APM 管控点状态评估
-- HTML 可视化报告（含颜色标记、进度条、卡片式布局）
+```
+/tmp/agent_eval_report.html
+```
 
-**⚠️ 脚本执行后必须立即调用 present_files 展示 /tmp/agent_eval_report.html。**
-
-若脚本执行失败（极少情况），展示终端错误信息并告知用户，不要自行手算替代。
-
-🔴 **CHECKPOINT — 确认报告**：展示报告概要（总分、等级、Top 3 改进建议）给用户确认。
-
-- **必须等待用户明确回复「确认」后**，才能输出完整报告并进入步骤 4
-- 若用户对报告内容满意 → 输出完整报告
-- 若用户要求修改 → 根据反馈调整权重或评分后重新计算，再展示
+**操作 C：从报告中提取 Top 3 改进建议用文字列出**
 
 ### 步骤 4：展示改进建议
 

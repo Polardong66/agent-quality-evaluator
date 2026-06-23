@@ -122,7 +122,15 @@ def generate_dimension_rows(scores, weights):
     return "\n".join(rows)
 
 
-def generate_improvement_items(scores, weights):
+def generate_improvement_items(scores, weights, eval_data=None):
+    """生成改进建议卡片。如果 eval_data 为 evaluate.py 的完整输出，则提取详细建议。"""
+    # 构建详细建议查找表（来自 evaluate.py 输出的 improvement_suggestions）
+    detail_map = {}
+    if eval_data and "improvement_suggestions" in eval_data:
+        for sug in eval_data["improvement_suggestions"]:
+            dim_key = sug.get("dimension", "")
+            detail_map[dim_key] = sug.get("suggestions", [])
+
     dim_map = {
         "accuracy": ("准确性", "错误集中在哪类任务？"),
         "stability": ("稳定性", "哪些输入条件下容易波动？"),
@@ -136,21 +144,35 @@ def generate_improvement_items(scores, weights):
         s = scores.get(key, 50)
         w = weights.get(key, 0)
         loss = round((100 - s) * w / 100, 2)
-        items.append((name, s, loss, diag, key))
+        suggestions = detail_map.get(key, [])
+        items.append((name, s, loss, diag, key, suggestions))
     items.sort(key=lambda x: x[2], reverse=True)
 
-    items = [x for x in items if x[2] > 0]  # 过滤无损失的维度
+    items = [x for x in items if x[2] > 0]
     if not items:
         return '<p>所有维度表现良好，无明显改进项。</p>'
 
     html_items = []
     priorities = [(0, "P0 · 立即处理", "p0"), (1, "P1 · 本迭代处理", "p1"), (2, "P2 · 后续迭代", "p2")]
-    for idx, (name, s, loss, diag, key) in enumerate(items[:3]):
+    for idx, (name, s, loss, diag, key, suggestions) in enumerate(items[:3]):
         p_label, p_text, p_class = priorities[idx % 3]
+        # 构建详细建议文本
+        detail_lines = []
+        if suggestions:
+            # 使用 evaluate.py 提供的具体反模式和检查点建议
+            detail_lines = [s for s in suggestions if s.strip() and s != "该维度表现优秀，保持即可" and s != "该维度表现尚可，可针对细节优化" and "建议优先解决核心问题" not in s and "建议逐一排查以下检查点" not in s][:3]
+        if not detail_lines:
+            detail_lines = [f"诊断线索：{diag}"]
+
+        detail_html = " &nbsp;|&nbsp; ".join(detail_lines[:3])
         html_items.append(
-            f'<div class="improvement-row {p_class}">'
-            f'<div class="pri">{p_text} — {name} ({s}分 → 目标 ≥{min(s+15,100)}分 · 损失{loss}分)</div>'
-            f'<div class="detail">诊断线索：{diag} &nbsp;|&nbsp; 建议基于该维度评估发现制定具体行动项</div>'
+            f'<div class="improvement-item {p_class}">'
+            f'<div class="improve-head">'
+            f'<span class="improve-pri">{p_text}</span>'
+            f'<span class="improve-dim">{name}</span>'
+            f'<span class="improve-meta">{s}分 → 目标 ≥{min(s+15,100)}分 · 损失{loss}分</span>'
+            f'</div>'
+            f'<div class="improve-detail">{detail_html}</div>'
             f'</div>'
         )
     return "\n".join(html_items) if html_items else '<p>无明显短板，所有维度得分均较高。</p>'
@@ -546,7 +568,7 @@ def generate_report(data, preset="通用场景"):
         "{{dimension_rows}}": generate_dimension_rows(scores, weights),
         "{{diagnosis_sections}}": generate_diagnosis_sections(scores),
         "{{apm_rows}}": generate_apm_rows(scores),
-        "{{improvement_items}}": generate_improvement_items(scores, weights),
+        "{{improvement_items}}": generate_improvement_items(scores, weights, data),
         "{{biggest_gap}}": biggest_gap,
         "{{timeline_items}}": generate_timeline(total_score),
         "{{gate_section}}": generate_gate_section(total_score, scores),
