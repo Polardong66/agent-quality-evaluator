@@ -48,10 +48,9 @@ Input: 看输入处理（可控性、稳定性）
 ## 执行流程
 
 ```
-步骤1          步骤2          步骤3            步骤4          步骤5
-选择场景    →  分析评分    →  计算+生成报告  →  改进建议    →  部署门禁
-                 评分确认       🛑必须运行脚本       报告确认      交叉验证
-                                    → present_files
+步骤1          步骤2          步骤3               步骤4          步骤5
+选择场景    →  分析评分    →  自动生成报告+展示  →  深度改进建议  →  部署门禁
+                 评分确认        🛑脚本→present     报告确认      交叉验证
 ```
 
 步骤 3 为自动化脚本执行：evaluate.py 计算 → generate_report.py 生成 HTML → present_files 展示。禁止跳过或手动计算替代。
@@ -126,9 +125,9 @@ Input: 看输入处理（可控性、稳定性）
 - 若用户对某个维度评分有异议 → 重新讨论该维度后修改
 - 所有维度评分确认后，才能进入步骤 3
 
-### 步骤 3：生成 HTML 报告
+### 步骤 3：生成 HTML 报告（自动执行，无需用户确认）
 
-评分和权重确认后，**必须执行以下操作，不可跳过、不可用文本替代**：
+步骤 2 用户确认评分后，**立即自动执行以下操作**。不需要等待用户说「生成报告」或额外确认——评分确认即触发：
 
 **操作 A：Bash 工具执行脚本管道**
 
@@ -136,13 +135,9 @@ Input: 看输入处理（可控性、稳定性）
 cd ~/.workbuddy/skills/agent-quality-evaluator && python3 scripts/evaluate.py --scores '{"accuracy":85,...}' --preset "通用场景" --json-output > /tmp/agent_eval_result.json && python3 scripts/generate_report.py --input /tmp/agent_eval_result.json --preset "通用场景" --agent-name "Agent名称" --one-liner "结论" -o /tmp/agent_eval_report.html
 ```
 
-**操作 B：present_files 展示文件**
+**操作 B：present_files 展示 `/tmp/agent_eval_report.html`**
 
-```
-/tmp/agent_eval_report.html
-```
-
-**操作 C：从报告中提取 Top 3 改进建议用文字列出**
+**操作 C：用文字列出 Top 3 改进建议（P0/P1/P2）**，然后询问是否进入步骤 4 深度分析。
 
 ### 步骤 4：展示改进建议
 
