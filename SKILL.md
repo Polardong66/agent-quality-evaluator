@@ -48,14 +48,13 @@ Input: 看输入处理（可控性、稳定性）
 ## 执行流程
 
 ```
-步骤1          步骤2          步骤3        步骤4          步骤5          步骤6
-选择场景    →  分析评分    →  执行计算  →  生成报告    →  改进建议    →  部署门禁
-🛑权重确认     评分确认                      报告确认                      交叉验证
-  🔴              🔴                          🔴              🔴              🔴
+步骤1          步骤2          步骤3            步骤4          步骤5
+选择场景    →  分析评分    →  计算+生成报告  →  改进建议    →  部署门禁
+🛑权重确认     评分确认       🛑必须运行脚本       报告确认      交叉验证
+                                → present_files
 ```
 
-每个步骤有明确的 🛑 或 🔴 CHECKPOINT，必须通过后才能进入下一步。步骤 1 为 🛑 阻断级。
-步骤 2 为主动分析模式：skill 读取 Agent 代码或行为描述后自行评分，而非让用户提供分数。
+步骤 3 为自动化脚本执行：evaluate.py 计算 → generate_report.py 生成 HTML → present_files 展示。禁止跳过或手动计算替代。
 
 ### 步骤 1：确定评估场景和权重
 
@@ -134,105 +133,39 @@ Input: 看输入处理（可控性、稳定性）
 - 若用户对某个维度评分有异议 → 重新讨论该维度后修改
 - 所有维度评分确认后，才能进入步骤 3
 
-### 步骤 3：执行评估计算
+### 步骤 3：计算 + 生成 HTML 报告（自动化，不可跳过）
 
-**输入**：六个维度的评分 + 选定的权重预设
-**输出**：加权总分、等级、各维度加权分、APM 管控点评估
+**这是产生最终交付物的步骤。禁用手动计算回退，必须运行脚本。**
 
-使用 `scripts/evaluate.py` 执行计算：
+评分确认后，立即执行以下命令（用 Bash 工具，三行一起跑）：
 
 ```bash
-# 方式1：命令行直接传分数
-python3 scripts/evaluate.py \
-  --scores '{"accuracy":85,"stability":70,"speed":60,"controllability":75,"cost":80,"compliance":50}' \
-  --preset "通用场景"
-
-# 方式2：使用JSON配置文件
-python3 scripts/evaluate.py --config eval_config.json
-
-# 方式3：交互模式
-python3 scripts/evaluate.py
-
-# 输出JSON格式（便于后续处理）
-python3 scripts/evaluate.py --scores '...' --json-output
-
-# 输出报告到文件
-python3 scripts/evaluate.py --scores '...' -o report.txt
+cd ~/.workbuddy/skills/agent-quality-evaluator && \
+python3 scripts/evaluate.py --scores '<JSON_SCORES>' --preset "<PRESET_NAME>" --json-output > /tmp/agent_eval_result.json && \
+python3 scripts/generate_report.py --input /tmp/agent_eval_result.json --preset "<PRESET_NAME>" --agent-name "<AGENT_NAME>" --one-liner "<ONE_LINER>" -o /tmp/agent_eval_report.html
 ```
 
-脚本将自动计算：
-- 各维度加权得分
-- 综合总分与等级（A-E）及成熟度等级（L1-L5）
-- 彩色终端输出：维度表格 + 进度条 + P0/P1/P2 分类建议
+将 `<JSON_SCORES>` 替换为步骤 2 确认的六维评分 JSON，`<PRESET_NAME>` 替换为步骤 1 选定的场景名，`<AGENT_NAME>` 为评估对象名称，`<ONE_LINER>` 为步骤 2 确认的一句话结论。
+
+脚本自动完成：
+- 各维度加权得分、综合总分与等级（A-E）、成熟度等级（L1-L5）
 - 按加权损失分排序的改进建议
 - 七个 APM 管控点状态评估
+- HTML 可视化报告（含颜色标记、进度条、卡片式布局）
 
-若脚本执行失败 → 使用手动计算公式：总分 = Σ(维度得分 × 权重)，各维度加权损失分 = (100 - 维度得分) × 权重，参照 `references/evaluation_framework.md`「五、总分计算」的等级表判定等级。手动计算时在报告中标注「手动计算」。
+**⚠️ 脚本执行后必须立即调用 present_files 展示 /tmp/agent_eval_report.html。**
 
-### 步骤 4：生成评估报告
-
-**输入**：评估计算结果（总分、各维度得分、APM评估、改进建议）
-**输出**：可视化 HTML 评估报告（含颜色标记、进度条、卡片式布局）
-
-**方式一：使用 HTML 报告生成器（推荐）**
-
-```bash
-# 进入 skill 目录后执行
-cd ~/.workbuddy/skills/agent-quality-evaluator
-
-# 评估并保存 JSON 结果
-python3 scripts/evaluate.py \
-  --scores '{"accuracy":85,"stability":70,"speed":60,"controllability":75,"cost":80,"compliance":55}' \
-  --preset "通用场景" --json-output > /tmp/agent_eval_result.json
-
-# 生成 HTML 报告
-python3 scripts/generate_report.py \
-  --input /tmp/agent_eval_result.json \
-  --preset "通用场景" --agent-name "待评估Agent" \
-  --one-liner "一句话结论" \
-  -o /tmp/agent_eval_report.html
-```
-
-**⚠️ 执行后必须调用 present_files 展示报告文件**，路径为 `/tmp/agent_eval_report.html`。
-
-HTML 报告特性：
-- 得分卡片 + 颜色标记（绿/蓝/黄/红对应 A/B/C/D 级）
-- 六维度进度条可视化
-- P0/P1/P2 改进建议独立卡片（红/黄/蓝边框）
-- 发展路径时间线图
-- 部署门禁网格 + 通过/失败结论条
-- 响应式布局，移动端适配
-
-**方式二：使用 Markdown 模板**
-
-基于 `assets/report_template.md` 填充生成 Markdown 报告，适用于纯文本场景。
-
-**两种方式均不可用时的回退结构**：
-
-1. **评估总览**：总分、等级、成熟度等级、可上线状态、六维得分一览、一句话结论
-2. **各维度诊断分析**：按诊断式核心问题逐项作答（如"错误集中在哪类任务？"）、反模式命中、APM关联
-3. **APM 管控点评估**：规划控制/记忆控制/工具控制/行动控制/编排控制/安全控制/全流程可观测性
-4. **改进建议与优先级**：集中模块，按 P0/P1/P2 排列，每条链接回对应维度的诊断发现，含当前分、目标分、行动项、预期效果
-5. **发展路径规划**：当前状态/短期/中期/长期目标方向
-6. **部署就绪门禁**：9 项逐条确认（仅 A/B 级填写）
-7. **CI/CD 集成建议**：按当前成熟度等级推荐自动化检查项
-
-输出格式：生成 HTML 报告（便于预览和分享）。若 HTML 生成失败 → 回退为 Markdown 格式。
-
-**⚠️ 报告产出检查清单**（步骤 4 完成前逐项确认）：
-1. `ls /tmp/agent_eval_report.html` 文件存在且 > 5KB
-2. 调用 `present_files` 展示 `/tmp/agent_eval_report.html`
-3. 用户预览确认后 → 步骤 5
+若脚本执行失败（极少情况），展示终端错误信息并告知用户，不要自行手算替代。
 
 🔴 **CHECKPOINT — 确认报告**：展示报告概要（总分、等级、Top 3 改进建议）给用户确认。
 
-- **必须等待用户明确回复「确认」后**，才能输出完整报告并进入步骤 5
+- **必须等待用户明确回复「确认」后**，才能输出完整报告并进入步骤 4
 - 若用户对报告内容满意 → 输出完整报告
 - 若用户要求修改 → 根据反馈调整权重或评分后重新计算，再展示
 
-### 步骤 5：提供改进建议
+### 步骤 4：展示改进建议
 
-步骤 4 的报告已包含改进建议的**概述**（P0/P1/P2 排序）。本步骤聚焦于**深度分析**：
+步骤 3 生成的 HTML 报告已包含改进建议的**概述**（P0/P1/P2 排序）。本步骤聚焦于**深度分析**：
 
 1. **按加权损失分排序**：损失分 = (100 - 得分) × 权重，损失分越高越需要优先关注
 2. **针对性建议**：根据具体得分区间给出不同层级的建议
@@ -242,7 +175,7 @@ HTML 报告特性：
    - ≥85 分：保持即可
 3. **可操作**：每个建议必须是具体的、可执行的行动项
 
-### 步骤 6：部署就绪门禁（上线前）
+### 步骤 5：部署就绪门禁（上线前）
 
 若评估结果显示系统可上线（等级 A 或 B），或用户明确要求上线，执行以下部署就绪确认。
 
